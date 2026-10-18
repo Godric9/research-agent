@@ -94,3 +94,23 @@ def search_files(key: str, root: str) -> str:
     if not results:
         return "No results found"
     return "\n".join(results)
+
+
+def write_file(path: str, content: str, root: str) -> str:
+    """Write content in `root/path`. Creates parent directories if they don't exist.
+    
+    Raises PermissionError if the file is not within the root directory.
+    Args:
+        path (str): The path to the file to write, relative to root.
+        content (str): The content to write to the file.
+        root (str): The root directory that the file must be within.
+    """
+    root_path = Path(root).resolve()
+    full_path = (root_path / Path(path)).resolve()
+    if not full_path.is_relative_to(root_path):
+        raise PermissionError(f"File path {full_path} is not within the root directory {root}")
+
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(full_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return f"written: {full_path.relative_to(root_path)}"
