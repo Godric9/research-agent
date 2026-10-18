@@ -63,12 +63,32 @@ def test_read_file_rejects_symlink(tmp_path):
 def test_search_files_two_results(tmp_path):
     (tmp_path / "a.md").write_text("the budget\nother", encoding="utf-8")
     (tmp_path / "b.txt").write_text("over budget", encoding="utf-8")
-    assert len(search_files("budget", str(tmp_path)).splitlines()) == 2
+    result = search_files("budget", str(tmp_path))
+    assert len(result.splitlines()) == 2
+    assert "a.md:" in result and "b.txt:" in result
+    assert str(tmp_path) not in result  # paths are relative to the root
 
 
 def test_search_files_no_results(tmp_path):
     (tmp_path / "a.md").write_text("nothing", encoding="utf-8")
     assert search_files("xyz", str(tmp_path)) == "No results found"
+
+
+def test_search_files_is_case_insensitive(tmp_path):
+    (tmp_path / "a.md").write_text("The BUDGET", encoding="utf-8")
+    assert "a.md" in search_files("budget", str(tmp_path))
+
+
+@pytest.mark.xfail(
+    reason="search_files does not confine symlinks (known limit, see README)"
+)
+def test_search_files_ignores_symlink(tmp_path):
+    root = tmp_path / "notes"
+    root.mkdir()
+    target = tmp_path / "secret.txt"  # OUTSIDE the root
+    target.write_text("topsecret", encoding="utf-8")
+    (root / "link.md").symlink_to(target)
+    assert search_files("topsecret", str(root)) == "No results found"
 
 
 # --- write_file: test of ABSENCE ---
