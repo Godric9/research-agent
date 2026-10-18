@@ -1,4 +1,5 @@
 import copy
+import json
 from types import SimpleNamespace as NS
 
 import pytest
@@ -122,3 +123,18 @@ def test_run_agent_max_tokens_executes_nothing(tmp_path):
     with pytest.raises(ValueError):
         run_agent("write", fake_client(truncated), tmp_path, tmp_path)
     assert not (tmp_path / "r.txt").exists()
+
+
+def test_run_agent_writes_journal(tmp_path):
+    log_path = tmp_path / "run.jsonl"
+    client = fake_client(
+        tool_response(block("calculator", {"expression": "12 + 30"})),
+        final_response("42"),
+    )
+    run_agent("q", client, tmp_path, tmp_path, log_path=log_path)
+    lines = [
+        json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert lines[0]["tool"] == "calculator"
+    assert lines[0]["result"] == "42"
+    assert lines[0]["is_error"] is False
