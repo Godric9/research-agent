@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from agent.common import MODEL, SYSTEM_PROMPT, AgentResult, LimiteAtteinte
@@ -42,10 +43,18 @@ def run_tool(block, notes_root: Path, output_root: Path) -> dict:
         return error(block, f"{type(e).__name__}: {e}")
 
 
-def run_agent(task, client, notes_root, output_root, max_iterations=8) -> AgentResult:
+def log(path, **fields):
+    if path:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(fields, ensure_ascii=False) + "\n")
+
+
+def run_agent(
+    task, client, notes_root, output_root, max_iterations=8, log_path=None
+) -> AgentResult:
     messages = [{"role": "user", "content": task}]
     tools = [schema for _, schema in TOOLS.values()]
-    for _ in range(max_iterations):
+    for i in range(max_iterations):
         response = client.messages.create(
             model=MODEL,
             max_tokens=2048,
@@ -59,10 +68,18 @@ def run_agent(task, client, notes_root, output_root, max_iterations=8) -> AgentR
         if response.stop_reason != "tool_use":
             texts = [b.text for b in response.content if b.type == "text"]
             return AgentResult("".join(texts))
-        results = [
-            run_tool(b, notes_root, output_root)
-            for b in response.content
-            if b.type == "tool_use"
-        ]
+        tool_blocks = [b for b in response.content if b.type == "tool_use"]
+        results = [run_tool(b, notes_root, output_root) for b in tool_blocks]
+        for b, r in zip(tool_blocks, results):
+            log(
+                log_path,
+                iteration=i + 1,
+                tool=b.name,
+                args=b.input,
+                result=str(r["content"])[:200],
+                is_error=r.get("is_error", False),
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+            )
         messages.append({"role": "user", "content": results})
     raise LimiteAtteinte(f"Limit of {max_iterations} iterations reached.")
