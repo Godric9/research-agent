@@ -5,9 +5,11 @@ from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.errors import GraphRecursionError
 
 from agent import tools as impl
 from agent.common import MODEL, SYSTEM_PROMPT
+from agent.common import AgentResult, LimiteAtteinte
 
 
 def build_tools(notes_root: Path, output_root: Path) -> list:
@@ -50,3 +52,22 @@ def build_graph(agent_node, tools: list):
     graph.add_conditional_edges("agent", tools_condition)
     graph.add_edge("tools", "agent")
     return graph.compile()
+
+
+def run_graph(
+    task, notes_root, output_root, max_iterations=8, log_path=None, agent_node=None
+) -> AgentResult:
+    tools = build_tools(notes_root, output_root)
+    if agent_node is None:
+        agent_node = create_agent_node(tools)
+    graph = build_graph(agent_node, tools)
+
+    try:
+        result = graph.invoke(
+            {"messages": [("user", task)]},
+            {"recursion_limit": 2 * max_iterations},
+        )
+    except GraphRecursionError as e:
+        raise LimiteAtteinte(f"Limit of {max_iterations} iterations reached.") from e
+
+    return AgentResult(result["messages"][-1].content)
