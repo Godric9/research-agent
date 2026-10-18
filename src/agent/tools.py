@@ -154,7 +154,27 @@ TOOLS_READ_FILE = {
     },
 }
 
+TOOLS_SEARCH_FILES = {
+    "name": "search_files",
+    "description": "Search for the given key words in all files under the root. Returns a string 'Found in <file_path>: <line> (l.<line_number>)' for each line that contains the key words, or 'No results found' if no matches are found.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "key": {
+                "type": "string",
+                "description": "The key words to search for."
+            },
+            "root": {
+                "type": "string",
+                "description": "The root directory to search in."
+            }
+        },
+        "required": ["key", "root"]
+    },
+}
+
 TOOLS = {
     "calculator": (calculator, TOOLS_CALCULATOR),
     "read_file": (read_file, TOOLS_READ_FILE),
+    "search_files": (search_files, TOOLS_SEARCH_FILES),
     }
