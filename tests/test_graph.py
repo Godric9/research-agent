@@ -1,11 +1,9 @@
+import pytest
 from langchain_core.messages import AIMessage
 
 from agent import tools as impl
-from agent.graph import build_graph, build_tools
-from agent.graph import run_graph
-from agent.graph import create_agent_node
 from agent.common import LimiteAtteinte
-import pytest
+from agent.graph import build_graph, build_tools, run_graph
 
 
 def test_build_tools_match_the_loop_schemas(tmp_path):
@@ -40,6 +38,7 @@ def test_graph_runs_a_tool_call(tmp_path):
     assert result["messages"][2].content == "42"  # ToolMessage from calculator
     assert result["messages"][-1].content == "42"
 
+
 def test_run_graph_stops_at_max_iterations(tmp_path):
     n = 0
 
@@ -55,6 +54,6 @@ def test_run_graph_stops_at_max_iterations(tmp_path):
 
 
 def test_run_graph_returns_final_answer(tmp_path):
-    fake = lambda state: {"messages": [AIMessage(content="done")]}  # noqa: E731
+    fake = lambda state: {"messages": [AIMessage(content="done")]}
     result = run_graph("hi", tmp_path, tmp_path, agent_node=fake)
     assert result.answer == "done"

@@ -3,13 +3,12 @@ from pathlib import Path
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
+from langgraph.errors import GraphRecursionError
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.errors import GraphRecursionError
 
 from agent import tools as impl
-from agent.common import MODEL, SYSTEM_PROMPT
-from agent.common import AgentResult, LimiteAtteinte
+from agent.common import MODEL, SYSTEM_PROMPT, AgentResult, LimiteAtteinte
 
 
 def build_tools(notes_root: Path, output_root: Path) -> list:
