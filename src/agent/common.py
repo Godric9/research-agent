@@ -20,3 +20,14 @@ class AgentResult:
     answer: str
     write_refused: bool = False
 
+
+def ask_terminal(path: str, content: str) -> bool:
+    """Show the proposed write and return True only if the user types y."""
+    print(f"--- Proposed write: {path} ---")
+    print(content)
+    print("---")
+    try:
+        reply = input("Write this file? [y/N] ")
+    except EOFError:
+        return False
+    return reply.strip().lower() == "y"
