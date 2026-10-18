@@ -135,6 +135,26 @@ TOOLS_CALCULATOR = {
     },
 }
 
+TOOLS_READ_FILE = {
+    "name": "read_file",
+    "description": "Read a file and return its contents as a string (truncated to MAX_CHARS). Raises PermissionError if the file is not within the root directory, FileNotFoundError if the file does not exist.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "The path to the file to read, relative to root."
+            },
+            "root": {
+                "type": "string",
+                "description": "The root directory that the file must be within."
+            }
+        },
+        "required": ["path", "root"]
+    },
+}
+
 TOOLS = {
     "calculator": (calculator, TOOLS_CALCULATOR),
+    "read_file": (read_file, TOOLS_READ_FILE),
     }
