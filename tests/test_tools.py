@@ -93,10 +93,14 @@ def test_search_files_ignores_symlink(tmp_path):
 
 # --- write_file: test of ABSENCE ---
 def test_write_file_rejects_outside_root(tmp_path):
-    root = tmp_path / "sortie"
+    root = tmp_path / "out"
     with pytest.raises(PermissionError):
         write_file("../outside.txt", "x", str(root))
     assert not (tmp_path / "outside.txt").exists()
+
+
+def test_write_file_creates_parent_dirs(tmp_path):
+    assert write_file("sub/r.txt", "hi", str(tmp_path)) == "written: sub/r.txt"
 
 
 def test_write_file_writes(tmp_path):
