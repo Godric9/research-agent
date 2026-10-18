@@ -114,3 +114,27 @@ def write_file(path: str, content: str, root: str) -> str:
     with open(full_path, "w", encoding="utf-8") as f:
         f.write(content)
     return f"written: {full_path.relative_to(root_path)}"
+
+
+TOOLS_CALCULATOR = {
+    "name": "calculator",
+    "description": ("Evaluate an arithmetic expression (+, -, *, /, parentheses) and return the result."
+                    "To use for every arithmetic expression, even if it is not explicitly requested."
+                    "Décimal are represented with a dot (.) and not a comma (,)."
+                    "And do not support variables, functions, or dates."
+                    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "expression": {
+                "type": "string",
+                "description": "The arithmetic expression to evaluate."
+            }
+        },
+        "required": ["expression"]
+    },
+}
+
+TOOLS = {
+    "calculator": (calculator, TOOLS_CALCULATOR),
+    }
