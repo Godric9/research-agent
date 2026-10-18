@@ -34,6 +34,11 @@ def test_read_file_reads_a_note(tmp_path):
     assert read_file("a.md", str(tmp_path)) == "hello"
 
 
+def test_read_file_truncates(tmp_path):
+    (tmp_path / "big.md").write_text("x" * 6000, encoding="utf-8")
+    assert read_file("big.md", str(tmp_path)).endswith("(truncated)")
+
+
 def test_read_file_rejects_traversal(tmp_path):
     with pytest.raises(PermissionError):
         read_file("../../etc/passwd", str(tmp_path))
