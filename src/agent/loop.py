@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from agent.common import MODEL, SYSTEM_PROMPT, AgentResult, LimiteAtteinte
 from agent.tools import TOOLS
 
 
@@ -39,3 +40,29 @@ def run_tool(block, notes_root: Path, output_root: Path) -> dict:
         }
     except Exception as e:  # noqa: BLE001 - tool errors go back to the model
         return error(block, f"{type(e).__name__}: {e}")
+
+
+def run_agent(task, client, notes_root, output_root, max_iterations=8) -> AgentResult:
+    messages = [{"role": "user", "content": task}]
+    tools = [schema for _, schema in TOOLS.values()]
+    for _ in range(max_iterations):
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=2048,
+            system=SYSTEM_PROMPT,
+            tools=tools,
+            messages=messages,
+        )
+        messages.append({"role": "assistant", "content": response.content})
+        if response.stop_reason == "max_tokens":
+            raise ValueError("Response truncated (max_tokens), nothing executed.")
+        if response.stop_reason != "tool_use":
+            texts = [b.text for b in response.content if b.type == "text"]
+            return AgentResult("".join(texts))
+        results = [
+            run_tool(b, notes_root, output_root)
+            for b in response.content
+            if b.type == "tool_use"
+        ]
+        messages.append({"role": "user", "content": results})
+    raise LimiteAtteinte(f"Limit of {max_iterations} iterations reached.")
