@@ -8,13 +8,16 @@ def test_calculator_addition():
     assert calculator("12 + 30") == "42"
 
 
+def test_calculator_budget_total():
+    assert float(calculator("(1249.90 + 387.35 + 2718.28) * 1.2")) == pytest.approx(
+        5226.636
+    )
+
+
 # --- calculator: input must be rejected ---
-def test_calculator_rejects_import():
-    with pytest.raises(ValueError):
-        calculator("__import__('os')")
-
-
-@pytest.mark.parametrize("expr", ["'a' * 10", "True + 1", "1e999", "2 +", "9 ** 9 ** 9"])
+@pytest.mark.parametrize(
+    "expr", ["__import__('os')", "'a' * 10", "True + 1", "1e999", "2 +", "9 ** 9 ** 9"]
+)
 def test_calculator_rejects(expr):
     with pytest.raises(ValueError):
         calculator(expr)
