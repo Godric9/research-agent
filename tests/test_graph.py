@@ -2,6 +2,10 @@ from langchain_core.messages import AIMessage
 
 from agent import tools as impl
 from agent.graph import build_graph, build_tools
+from agent.graph import run_graph
+from agent.graph import create_agent_node
+from agent.common import LimiteAtteinte
+import pytest
 
 
 def test_build_tools_match_the_loop_schemas(tmp_path):
@@ -35,3 +39,22 @@ def test_graph_runs_a_tool_call(tmp_path):
     result = graph.invoke({"messages": [("user", "12 + 30 ?")]})
     assert result["messages"][2].content == "42"  # ToolMessage from calculator
     assert result["messages"][-1].content == "42"
+
+def test_run_graph_stops_at_max_iterations(tmp_path):
+    n = 0
+
+    def always_tool(state):
+        nonlocal n
+        n += 1
+        call = {"name": "calculator", "args": {"expression": "1 + 1"}, "id": f"t{n}"}
+        return {"messages": [AIMessage(content="", tool_calls=[call])]}
+
+    with pytest.raises(LimiteAtteinte):
+        run_graph("loop", tmp_path, tmp_path, max_iterations=3, agent_node=always_tool)
+    assert n == 3
+
+
+def test_run_graph_returns_final_answer(tmp_path):
+    fake = lambda state: {"messages": [AIMessage(content="done")]}  # noqa: E731
+    result = run_graph("hi", tmp_path, tmp_path, agent_node=fake)
+    assert result.answer == "done"
