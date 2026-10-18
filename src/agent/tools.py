@@ -1,6 +1,7 @@
 import ast
 import math
 import operator
+from pathlib import Path
 
 _BINARY = {
     ast.Add: operator.add,
@@ -40,3 +41,19 @@ def calculator(expression: str) -> str:
     return str(_evaluate(tree))
 
 
+def read_file(path : str, root : str) -> str:
+    """Read a file and return its contents as a string.
+    
+    Raises ValueError if the file is not within the root directory, FileNotFoundError if the file does not exist.
+    
+    Args:
+        path (str): The path to the file to read.
+        root (str): The root directory that the file must be within."""
+    full_path = Path(path).resolve()
+    if not full_path.is_relative_to(Path(root).resolve()):
+        raise ValueError(f"File path {full_path} is not within the root directory {root}")
+
+    if not full_path.is_file():
+        raise FileNotFoundError(f"File not found: {full_path}")
+    with open(full_path, "r", encoding="utf-8") as f:
+        return f.read()
