@@ -11,6 +11,9 @@ _BINARY = {
 }
 _UNARY = {ast.UAdd: operator.pos, ast.USub: operator.neg}
 
+MAX_RESULTS = 50
+MAX_CHARS = 5000
+
 
 def _evaluate(node: ast.AST) -> float:
     """Recursively compute a node's value. Any node type outside the whitelist is rejected."""
@@ -42,18 +45,52 @@ def calculator(expression: str) -> str:
 
 
 def read_file(path : str, root : str) -> str:
-    """Read a file and return its contents as a string.
-    
-    Raises ValueError if the file is not within the root directory, FileNotFoundError if the file does not exist.
-    
+    """Read a file and return its contents as a string (truncated to MAX_CHARS).
+
+    Raises PermissionError if the file is not within the root directory, FileNotFoundError if the file does not exist.
+
     Args:
-        path (str): The path to the file to read.
+        path (str): The path to the file to read, relative to root.
         root (str): The root directory that the file must be within."""
-    full_path = Path(path).resolve()
-    if not full_path.is_relative_to(Path(root).resolve()):
-        raise ValueError(f"File path {full_path} is not within the root directory {root}")
+    root_path = Path(root).resolve()
+    full_path = (root_path / path).resolve()
+    if not full_path.is_relative_to(root_path):
+        raise PermissionError(f"File path {full_path} is not within the root directory {root}")
 
     if not full_path.is_file():
         raise FileNotFoundError(f"File not found: {full_path}")
     with open(full_path, "r", encoding="utf-8") as f:
-        return f.read()
+        content = f.read(MAX_CHARS + 1)
+    if len(content) > MAX_CHARS:
+        return content[:MAX_CHARS] + "\n(truncated)"
+    return content
+
+
+def search_files(key: str, root: str) -> str:
+    """
+    Search for the given key words in all files under the root.
+
+    Returns a string "Found in <file_path>: <line> (l.<line_number>)" for each line that contains the key words, or "No results found" if no matches are found.
+    """
+    root_path = Path(root).resolve()
+    if not root_path.is_dir():
+        raise ValueError(f"Root path {root} is not a directory")
+
+    key = key.lower()
+    results = []
+
+    for pattern in ("*.md", "*.txt"):
+        for file_path in root_path.rglob(pattern):
+            try:
+                with open(file_path, encoding="utf-8") as f:
+                    for line_number, line in enumerate(f, start=1):
+                        if key in line.lower():
+                            results.append(f"{file_path.relative_to(root_path)}: {line.strip()} (l.{line_number})")
+                            if len(results) >= MAX_RESULTS:
+                                return "\n".join(results) + "\n(results truncated)"
+            except (OSError, UnicodeDecodeError):
+                print(f"[SEARCH_FILES] (WARN): Error reading file {file_path}, skipping.")
+
+    if not results:
+        return "No results found"
+    return "\n".join(results)
