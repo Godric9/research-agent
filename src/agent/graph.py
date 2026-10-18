@@ -1,8 +1,13 @@
 from pathlib import Path
 
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import SystemMessage
 from langchain_core.tools import tool
+from langgraph.graph import START, MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode, tools_condition
 
 from agent import tools as impl
+from agent.common import MODEL, SYSTEM_PROMPT
 
 
 def build_tools(notes_root: Path, output_root: Path) -> list:
@@ -23,3 +28,25 @@ def build_tools(notes_root: Path, output_root: Path) -> list:
         return impl.write_file(path, content, str(output_root))
 
     return [calculator, read_file, search_files, write_file]
+
+
+def create_agent_node(tools: list):
+    model = ChatAnthropic(model=MODEL, max_tokens=2048).bind_tools(
+        tools, parallel_tool_calls=False
+    )
+
+    def agent_node(state: MessagesState) -> dict:
+        response = model.invoke([SystemMessage(SYSTEM_PROMPT), *state["messages"]])
+        return {"messages": [response]}
+
+    return agent_node
+
+
+def build_graph(agent_node, tools: list):
+    graph = StateGraph(MessagesState)
+    graph.add_node("agent", agent_node)
+    graph.add_node("tools", ToolNode(tools, handle_tool_errors=True))
+    graph.add_edge(START, "agent")
+    graph.add_conditional_edges("agent", tools_condition)
+    graph.add_edge("tools", "agent")
+    return graph.compile()
