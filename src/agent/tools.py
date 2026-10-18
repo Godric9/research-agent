@@ -173,8 +173,32 @@ TOOLS_SEARCH_FILES = {
     },
 }
 
+TOOLS_WRITE_FILE = {
+    "name": "write_file",
+    "description": "Write content in `root/path`. Creates parent directories if they don't exist. Raises PermissionError if the file is not within the root directory.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "The path to the file to write, relative to root."
+            },
+            "content": {
+                "type": "string",
+                "description": "The content to write to the file."
+            },
+            "root": {
+                "type": "string",
+                "description": "The root directory that the file must be within."
+            }
+        },
+        "required": ["path", "content", "root"]
+    },
+}
+
 TOOLS = {
     "calculator": (calculator, TOOLS_CALCULATOR),
     "read_file": (read_file, TOOLS_READ_FILE),
     "search_files": (search_files, TOOLS_SEARCH_FILES),
+    "write_file": (write_file, TOOLS_WRITE_FILE),
     }
